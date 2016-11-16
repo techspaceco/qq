@@ -27,6 +27,7 @@ Tail `/tmp/q`.
 
 ## Haven't I seen this somewhere before?
 
+### Python
 Python programmers will recognize this as a less awesome port of the
 [`q` module by zestyping](https://github.com/zestyping/q).
 
@@ -34,6 +35,7 @@ Ping does a great job of explaining `q` in his awesome lightning talk from
 PyCon 2013:
 [![ping's PyCon 2013 lightning talk](https://i.imgur.com/7KmWvtG.jpg)](https://youtu.be/OL3De8BAhME?t=25m14s)
 
+### Go
 Go developers may have seen [this `q` port by y0ssar1an](https://github.com/y0ssar1an/q).
 
 Even if you don't write Go this port includes notes on shell setup, snippets
