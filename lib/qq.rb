@@ -1,6 +1,8 @@
 require 'pp'
 require 'tmpdir'
 require 'thread'
+require 'parser'
+require 'unparser'
 
 # QQ improves puts debugging.
 #
@@ -16,69 +18,61 @@ require 'thread'
 #   require 'qq'; qq('hello world')
 # @see Python https://github.com/zestyping/q
 # @see Go https://github.com/y0ssar1an/q
-#--
-# TODO: Multiple line statement matching.
-# TODO: Compact printing for single line < 80 chars.
-Q = Object.new
-class << Q
-  # Best effort call source cleanup without AST.
-  # As the saying goes, "Only perl can parse Perl" and the same applies to Ruby.
-  # Parsing Ruby source is always a bad idea so just print the file:line if we
-  # can't match a basic statement.
-  RE = %r{
-    (?<parens>\( (?:[^()]+ | \<parens>)+ \)){0}
-    (?<bare>[\t ]+ (?:[^;]+ | \<parens>)+ (?=[\n;])){0}
-    (?:Q\.|;|\s|\A|q)q(?<statement>\g<parens>|\g<bare>)
-  }x
+module Q
+  #--
+  # TODO: Calling Q twice on the same line will cause issues because
+  # Thread::Backtrace::Location doesn't give us a character only a line.
+  class QQ < Parser::AST::Processor
+    NORMAL, YELLOW, CYAN = "\x1b[0m", "\x1b[33m", "\x1b[36m"
 
-  NORMAL, YELLOW, CYAN = "\x1b[0m", "\x1b[33m", "\x1b[36m"
+    @@mutex ||= Mutex.new
+    @@start ||= Time.now
+    @@location ||= nil
+
+    def initialize location, args
+      @location, @args = location, args
+      process(Parser::CurrentRuby.parse(File.read(location.absolute_path)))
+    end
+
+    def on_send ast_node
+      return unless ast_node.loc.line == @location.lineno
+      ast_receiver, ast_method, *ast_args = *ast_node
+
+      if ast_receiver # Q.q
+        _, ast_const, _ = *ast_receiver
+        return unless ast_const == :Q && ast_method == :q
+      else # qq
+        return unless ast_method == :qq
+      end
+
+      @@mutex.synchronize do
+        File.open(File.join(Dir.tmpdir, 'q'), 'a') do |fh|
+          now = Time.now
+          if @@start <= now - 2 || @@location&.label != @location.label
+            fh.write "\n%s[%s] %s\n" % [NORMAL, now.strftime('%T'), @location]
+            @@start = now
+          end
+          @args.zip(ast_args).each do |arg, ast_arg|
+            fh.write [YELLOW, "%1.3fs " % (now - @@start), NORMAL, ast_arg.loc.expression.source, ' = ', CYAN].join
+            PP.pp(arg, fh)
+            fh.write NORMAL
+          end
+          @@location = @location
+        end
+      end
+    end
+  end
 
   # Pretty print statements with QQ.
   #
   # @example
-  #   qq('hello world')
-  def q *args
-    _q(*args)
+  #  Q.q('hello world')
+  def self.q *args
+    _q(caller_locations(1, 1).first, args)
   end
 
-  #--
-  # Lazy hack so we can define multiple names and caller(2) will be the correct
-  # stack depth.
-  def _q *args
-    @instance ||= begin
-      @mu     = Mutex.new
-      @buffer = Queue.new
-      @start  = Time.now
-      @tid    = Thread.new do
-        running = true
-        at_exit{running = false; @tid.join}
-
-        while running || !@buffer.empty?
-          event = @buffer.pop
-          File.open(File.join(Dir.tmpdir, 'q'), 'a') do |fh|
-            fh.write event.to_s + NORMAL
-          end
-        end
-      end
-    end
-
-    location, now, event = caller_locations(2, 1).first, Time.now, ''
-    @mu.synchronize do
-      if @start <= now - 2 || @location&.label != location.label
-        event << "\n%s[%s] %s\n" % [NORMAL, now.strftime('%T'), location.label]
-        @start = now
-      end
-
-      source = File.open(location.absolute_path){|fh| location.lineno.times{fh.gets}; $_}
-      source = RE.match(source) ? $~[:statement].strip : ''
-      source = "(#{source})" unless source =~ /\A\(/
-
-      event << [YELLOW, "%1.3fs " % (now - @start), NORMAL, source, ' = ', CYAN].join
-      args.each{|arg| PP.pp(arg, event)}
-
-      @location = location
-      @buffer << event
-    end
+  def self._q location, args
+    QQ.new(location, args)
   end
 end
 
@@ -89,7 +83,6 @@ module Kernel
   #   qq('hello world')
   # @see Q.q
   def qq *args
-    Q._q(*args)
+    Q._q(caller_locations(1, 1).first, args)
   end
 end
-

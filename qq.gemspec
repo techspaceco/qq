@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name          = 'qq'
-  s.version       = '0.1.0'
+  s.version       = '0.1.1'
   s.licenses      = ['MIT']
   s.summary       = 'Improved pp debugging.'
   s.description   = 'Improved puts debugging output for busy Ruby programmers.'
@@ -9,5 +9,7 @@ Gem::Specification.new do |s|
   s.files         = ['lib/qq.rb']
   s.require_paths = ['lib']
   s.homepage      = 'https://github.com/techspaceco/qq'
-end
 
+  s.add_runtime_dependency('parser', ['~> 2.3'])
+  s.add_runtime_dependency('unparser', ['~> 0.2'])
+end

@@ -18,7 +18,6 @@ to `q` in your temp directory.
 
 ```ruby
 require 'qq'
-
 # ...
 qq(foo, bar, baz)
 ```
@@ -56,3 +55,8 @@ Sadly there is already [this `q` gem](https://rubygems.org/gems/q).
 ### Is `qq` thread safe?
 Yes
 
+## Known issues
+
+Calling `qq` twice on the one line.
+`Thread::Backtrace::Location` doesn't list a column for the caller.
+Use multiple arguments to the one `qq` call instead.
