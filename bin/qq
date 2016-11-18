@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+require 'fileutils'
+require 'optparse'
+require 'tmpdir'
+
+QFILE = File.join(Dir.tmpdir, 'q')
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = "usage: qq [options]"
+
+  opts.on('--tmpdir', 'Print system tempdir to stdout.') do
+    puts Dir.tmpdir
+    exit
+  end
+
+  opts.on('--truncate', 'Truncate qq temp file.') do
+    File.truncate(QFILE, 0)
+    exit
+  end
+
+  opts.on('-h', '--help') do
+    puts opts
+    exit
+  end
+end.parse!
+
+FileUtils.touch(QFILE) unless File.exists?(QFILE)
+exec 'tail', '-f', QFILE
+

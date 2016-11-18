@@ -22,7 +22,8 @@ require 'qq'
 qq(foo, bar, baz)
 ```
 
-Tail `/tmp/q`.
+Use the `qq` command installed with the gem to tail the `q` file in your temp
+directory.
 
 ## Haven't I seen this somewhere before?
 
@@ -55,8 +56,15 @@ Sadly there is already [this `q` gem](https://rubygems.org/gems/q).
 ### Is `qq` thread safe?
 Yes
 
+### Why is there no `q` in `/tmp/q`?
+Your `$TMP` or `$TMPDIR` may point somewhere else.
+```sh
+qq --tmpdir
+```
+
 ## Known issues
 
 Calling `qq` twice on the one line.
 `Thread::Backtrace::Location` doesn't list a column for the caller.
 Use multiple arguments to the one `qq` call instead.
+
