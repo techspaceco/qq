@@ -3,6 +3,7 @@ require 'minitest/autorun'
 
 require 'qq'
 require 'tmpdir'
+require 'erb'
 
 describe 'qq' do
   before do
@@ -23,5 +24,14 @@ describe 'qq' do
     assert_match(%r{'qq must qq'}sm, output, 'qq prints expression')
     assert_match(%r{=[^"]+"qq must qq"}sm, output, 'qq prints expression result')
   end
-end
 
+  it 'must qq embedded ruby' do
+    ERB.new(File.read(File.join(File.dirname(__FILE__), 'fixtures', 'qq_test.html.erb'))).result
+
+    assert File.size?(@qfile), 'must have size after qq'
+    assert output = File.read(@qfile)
+
+    assert_match(%r{line:\d+ arg:\d+}, output, 'qq prints argument position')
+    assert_match(%r{=[^"]+"qq erb"}sm, output, 'qq prints expression from evaled erb')
+  end
+end

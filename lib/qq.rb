@@ -33,7 +33,18 @@ class QQ < Parser::AST::Processor
   # TODO: Complain if called directly.
   def initialize location, args
     @location, @args = location, args
-    process(Parser::CurrentRuby.parse(File.read(location.absolute_path)))
+    @@mutex.synchronize do
+      begin
+        # Parse the statement that generated the argument from source.
+        process(Parser::CurrentRuby.parse(File.read(location.absolute_path)))
+      rescue StandardError
+        # Failed to parse or embedded Ruby (HAML, ERB, ...) prints the position of each argument in qq()
+        # location preamble/header.
+        # line:0 arg:0 = ...
+        # line:0 arg:1 = ...
+        write args.each_with_index.map{|arg, position| [arg, 'line:%d arg:%d' % [@location.lineno, position]]}
+      end
+    end
   end
 
   def on_send ast_node
@@ -41,23 +52,26 @@ class QQ < Parser::AST::Processor
     ast_receiver, ast_method, *ast_args = *ast_node
 
     return if ast_receiver || ast_method != :qq
-    @@mutex.synchronize do
-      File.open(File.join(Dir.tmpdir, 'q'), 'a') do |fh|
-        now = Time.now
+    write @args.zip(ast_args).map{|arg, ast_arg| [arg, ast_arg.loc.expression.source]}
+  end
 
-        if @@start <= now - 2 || @@location&.label != @location.label
-          fh.write "\n%s[%s] %s\n" % [NORMAL, now.strftime('%T'), @location]
-          @@start = now
-        end
+  protected
+  def write args
+    File.open(File.join(Dir.tmpdir, 'q'), 'a') do |fh|
+      now = Time.now
 
-        @args.zip(ast_args).each do |arg, ast_arg|
-          fh.write [YELLOW, "%1.3fs " % (now - @@start), NORMAL, ast_arg.loc.expression.source, ' = ', CYAN].join
-          PP.pp(arg, fh)
-          fh.write NORMAL
-        end
-
-        @@location = @location
+      if @@start <= now - 2 || @@location&.label != @location.label
+        fh.write "\n%s[%s] %s\n" % [NORMAL, now.strftime('%T'), @location]
+        @@start = now
       end
+
+      args.each do |arg, arg_source|
+        fh.write [YELLOW, "%1.3fs " % (now - @@start), NORMAL, arg_source, ' = ', CYAN].join
+        PP.pp(arg, fh)
+        fh.write NORMAL
+      end
+
+      @@location = @location
     end
   end
 end
