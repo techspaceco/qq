@@ -1,8 +1,17 @@
 require 'pp'
 require 'tmpdir'
 require 'thread'
-require 'parser'
-require 'unparser'
+
+# Suppress Ruby parser warnings.
+# If the parser fails we have reasonable defaults.
+begin
+  stderr = $stderr
+  $stderr = StringIO.new
+  require 'parser'
+  require 'unparser'
+ensure
+  $stderr = stderr
+end
 
 # QQ improves puts debugging.
 #
