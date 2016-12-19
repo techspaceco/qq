@@ -75,6 +75,9 @@ class QQ < Parser::AST::Processor
       end
 
       args.each do |arg, arg_source|
+        if defined?(ActiveRecord) && arg.is_a?(ActiveRecord::Base) && arg.respond_to?(:attributes)
+          arg = arg.attributes
+        end
         fh.write [YELLOW, "%1.3fs " % (now - @@start), NORMAL, arg_source, ' = ', CYAN].join
         PP.pp(arg, fh)
         fh.write NORMAL
