@@ -29,9 +29,9 @@ directory.
 
 ### Python
 Python programmers will recognize this as a less awesome port of the
-[`q` module by zestyping](https://github.com/zestyping/q).
+[`q` module by zestyping](https://github.com/zestyping/q) Ka-Ping Yee (zestyping).
 
-Ping does a great job of explaining `q` in his awesome lightning talk from
+Zestyping does a great job of explaining `q` in his awesome lightning talk from
 PyCon 2013:
 [![ping's PyCon 2013 lightning talk](https://i.imgur.com/7KmWvtG.jpg)](https://youtu.be/OL3De8BAhME?t=25m14s)
 
