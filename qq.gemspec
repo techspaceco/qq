@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name          = 'qq'
-  s.version       = '0.2.3'
+  s.version       = '0.2.4'
   s.licenses      = ['MIT']
   s.summary       = 'Improved pp debugging.'
   s.description   = 'Improved puts debugging output for busy Ruby programmers.'

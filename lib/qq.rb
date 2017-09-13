@@ -34,7 +34,7 @@ class QQ < Parser::AST::Processor
   NORMAL, YELLOW, CYAN = "\x1b[0m", "\x1b[33m", "\x1b[36m"
 
   @@mutex ||= Mutex.new
-  @@start ||= Time.now
+  @@start ||= Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second)
   @@location ||= nil
 
   # @see Kernel#qq
@@ -65,20 +65,18 @@ class QQ < Parser::AST::Processor
   end
 
   protected
+
   def write args
     File.open(File.join(Dir.tmpdir, 'q'), 'a') do |fh|
-      now = Time.now
+      now = Process.clock_gettime(Process::CLOCK_MONOTONIC, :float_second)
 
-      if @@start <= now - 2 || @@location&.label != @location.label
-        fh.write "\n%s[%s] %s\n" % [NORMAL, now.strftime('%T'), @location]
+      if @@start <= now - 2.0 || @@location&.label != @location.label
+        fh.write "\n%s[%s] %s\n" % [NORMAL, Time.now.strftime('%T'), @location]
         @@start = now
       end
 
       args.each do |arg, arg_source|
-        if defined?(ActiveRecord) && arg.is_a?(ActiveRecord::Base) && arg.respond_to?(:attributes)
-          arg = arg.attributes
-        end
-        fh.write [YELLOW, "%1.3fs " % (now - @@start), NORMAL, arg_source, ' = ', CYAN].join
+        fh.write [YELLOW, '%1.3fs ' % (now - @@start), NORMAL, arg_source, ' = ', CYAN].join
         PP.pp(arg, fh)
         fh.write NORMAL
       end
